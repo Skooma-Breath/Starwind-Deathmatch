@@ -5,7 +5,7 @@ admin commands
 
 -- `/newmap` -- creates new match data using the current cell location inside testDMMaps, testDMMatchSettings, and testDMConfig.matchList
 
--- `/addspawn` `team` (1 or 2) -- used to create spawn locations for your newly created map
+-- `/addspawn` `team` (1 or 2) -- uses your current location to create spawn locations for your newly created map
 
 -- `/forcend` -- ends the current match and starts a random new one
 
