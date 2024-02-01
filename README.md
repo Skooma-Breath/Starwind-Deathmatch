@@ -21,3 +21,8 @@ player commands
 -- `/newoutfit` -- gives you a new outfit when playing DM
 
 -- `/switch` -- switch teams (untested)...
+
+-- `/score` -- shows score (untested)...
+
+
+weapons and stats are setup in testDMConfig.lua
