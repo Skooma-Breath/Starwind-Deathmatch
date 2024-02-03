@@ -90,7 +90,8 @@ testDMConfig.allowRacePowers = false
 testDMConfig.allowSignPowers = false
 
 -- Determines if it is possible to use different presets of equipment / stats
-testDMConfig.allowClasses = true
+--TODO don't really need this one now...
+-- testDMConfig.allowClasses = true
 
 -- simple placeholder classes...
 testDMConfig.playerLoadouts = {
@@ -109,18 +110,18 @@ testDMConfig.playerLoadouts = {
     [18] = {refId = "SW_GRFrag", count = 75, charge = -1, enchantmentCharge = -1}
   },
 }
--- Starting equipped items for each class
--- testDMConfig.playerStartingClass = {
---   [16] = {refId = "SW_BlasterSniperArk", count = 1, charge = -1, enchantmentCharge = -1},
---   [18] = {refId = "SW_BlastBoltBest", count = 75, charge = -1, enchantmentCharge = -1}
--- }
 
--- testDMConfig.playerEquipMelee = {{"steel saber", 1, -1}, {"steel_shield", 1, -1}} -- "Melee"
--- testDMConfig.playerEquipRanged = {{"SW_BlasterSniperArk", 1, -1}, {"SW_BlastBoltBest", 75, -1}} -- "Ranged"
--- testDMConfig.playerEquipRanged = {{"steel crossbow", 1, -1}, {"bonemold bolt", 75, -1}} -- "Ranged"
 -- testDMConfig.playerEquipInstagib = {{"daedric long bow", 1, -1}, {"daedric arrow", 75, -1}}
--- Choose "Melee" or "Ranged" for starting equipment, or leave it blank as ""
-testDMConfig.playerEquipmentType = "Ranged"
+--TODO make command to set this in game
+testDMConfig.classGlobalOverride = false
+
+--TODO make a command to set any class to the global class
+testDMConfig.playerEquipmentGlobal = {
+  ["global class"] = {
+    [16] = {refId = "SW_Revolver", count = 1, charge = -1, enchantmentCharge = -1},
+    [18] = {refId = "SW_BlastArrowBest", count = 75, charge = -1, enchantmentCharge = -1}
+  },
+}
 
 -- list of default values
 -- these are used when match does not specify it's own value
