@@ -448,6 +448,10 @@ testDM.PlayerInit = function(pid)
 	Players[pid].data.customVariables.dm_class = ""
 	Players[pid].data.customVariables.changeClass = false
 
+	if not testDMConfig.classGlobalOverride and not currentMatch.matchSpecificClass then
+			tes3mp.SendMessage(pid, color.Silver .. "Use " .. color.Lime .. "/class " .. color.Silver .. "to change your loadout.\n")
+	end
+
 	testDM.PlayerItems(pid)
 	testDM.PlayerSpawner(pid)
 end
@@ -975,7 +979,32 @@ testDM.TeamHandler = function(pid)
 	testDM.TeamItems(pid)
 end
 
+local function toggle_global_class(pid, cmd)
+
+		testDMConfig.classGlobalOverride = not testDMConfig.classGlobalOverride
+
+end
+customCommandHooks.registerCommand("tgc", toggle_global_class)
+
+local function set_match_specific_class(pid, cmd)
+
+		--TODO set currentMatch.matchSpecificClass to some class
+
+end
+
+local function create_class(pid, cmd)
+
+		--TODO /newclass classname (makes empty table)
+		--TODO /addtoclass equipmentSlot refId
+		--TODO /createclass (saves to json)
+
+end
+
 local function choose_class(pid, cmd)
+		if testDMConfig.classGlobalOverride or currentMatch.matchSpecificClass then
+				tes3mp.SendMessage(pid, color.Silver .. "Global class is being enforced.\n")
+				return
+		end
 		local class = cmd[2]
 		if cmd[3] then 	class = class .. " " .. cmd[3] end
 		--TODO let players choose the class they wish to use after their next death... classes are setup in testDMConfig
@@ -1014,13 +1043,31 @@ testDM.PlayerItems = function(pid)
 			end
 		end
 
-		-- TODO: have some way to force the same loadout on everyone via specific match or command
-		if Players[pid].data.customVariables.dm_class == "" then
-				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts["startingclass"], true)
+		if testDMConfig.classGlobalOverride then
+
+				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerEquipmentGlobal["global class"], true)
+
+		elseif currentMatch.matchSpecificClass then
+
+				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[currentMatch.matchSpecificClass], true)
+
 		else
-				--TODO set equipment to whatever class the player has set
-				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[Players[pid].data.customVariables.dm_class], true)
+				if Players[pid].data.customVariables.dm_class == "" then
+						tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts["startingclass"], true)
+				else
+						tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[Players[pid].data.customVariables.dm_class], true)
+				end
 		end
+
+		-- if testDMConfig.allowClasses == true then
+		-- 		if Players[pid].data.customVariables.dm_class == "" then
+		-- 				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts["startingclass"], true)
+		-- 		else
+		-- 				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[Players[pid].data.customVariables.dm_class], true)
+		-- 		end
+		-- else
+		-- 		tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerEquipmentGlobal["global class"], true)
+		-- end
 
 	elseif gameMode == "tdm" or gameMode == "ctf" then
 		testDM.TeamItems(pid)
@@ -1097,11 +1144,20 @@ testDM.TeamItems = function(pid)
 			--robe
 			Players[pid].data.equipment[11] = { refId = testDMConfig.teamUniforms[teamIndex][4], count = 1, charge = -1 }
 
+			if testDMConfig.classGlobalOverride then
 
-			if Players[pid].data.customVariables.dm_class == "" then
-					tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts["startingclass"], true)
+					tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerEquipmentGlobal["global class"], true)
+
+			elseif currentMatch.matchSpecificClass then
+
+					tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[currentMatch.matchSpecificClass], true)
+
 			else
-					tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[Players[pid].data.customVariables.dm_class], true)
+					if Players[pid].data.customVariables.dm_class == "" then
+							tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts["startingclass"], true)
+					else
+							tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[Players[pid].data.customVariables.dm_class], true)
+					end
 			end
 
 		end
