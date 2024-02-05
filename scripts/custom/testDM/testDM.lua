@@ -1274,7 +1274,7 @@ local function add_map(pid)
 		tes3mp.SendMessage(pid, color.Silver .. "New map was created, to make changes go to /server/data/testDM.\n", false)
 		jsonInterface.save("custom/testDM/testDMMaps.json", testDMMaps)
 		jsonInterface.save("custom/testDM/testDMMatchSettings.json", testDMMatchSettings)
-		jsonInterface.save("custom/testDM/testDMConfig_Matchlist.json", testDMConfig.matchList)
+		jsonInterface.save("custom/testDM/testDMConfig.json", testDMConfig)
 
 end
 
