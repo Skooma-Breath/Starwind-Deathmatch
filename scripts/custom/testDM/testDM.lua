@@ -982,13 +982,50 @@ end
 local function toggle_global_class(pid, cmd)
 
 		testDMConfig.classGlobalOverride = not testDMConfig.classGlobalOverride
+		if testdmconfig.classGlobalOverride then
+				tes3mp.SendMessage(pid, color.Silver ..  "global class was enabled\n")
+		else
+				tes3mp.SendMessage(pid, color.Silver ..  "global class was diabled\n")
+		end
 
 end
-customCommandHooks.registerCommand("tgc", toggle_global_class)
 
-local function set_match_specific_class(pid, cmd)
+local function class_override(pid, cmd)
 
-		--TODO set currentMatch.matchSpecificClass to some class
+		local type = cmd[2]
+
+		if type  == "match" then
+				local match = cmd[3]
+				local class = cmd[4]
+				if cmd[5] then 	class = class .. " " .. cmd[5] end
+				testDMMatchSettings[cmd[3]].matchSpecificClass = class
+				tes3mp.SendMessage(pid, color.Silver .. "Class will be set to " .. color.Warning .. class .. color.Silver .. " for everyone on " .. cmd[3] .. ".\n")
+				jsonInterface.save("custom/testDM/testDMMatchSettings.json", testDMMatchSettings)
+		end
+
+		if type == "global" then
+				local class = cmd[3]
+				if cmd[4] then 	class = class .. " " .. cmd[4] end
+				testDMConfig.playerEquipmentGlobal["global class"] = testDMConfig.playerLoadouts[class]
+				tes3mp.SendMessage(pid, color.Silver .. "Class will be set to " .. color.Warning .. class .. color.Silver ..
+				" for everyone on all matches if global class is enforced " .. color.Warning .. "(/tgc)" .. color.Silver .. ".\n")
+				jsonInterface.save("custom/testDM/testDMConfig.json", testDMConfig)
+		end
+
+		--TODO add example commands if cmd[3] is nil
+end
+
+local function load_settings(pid, cmd)
+
+		if jsonInterface.load("custom/testDM/testDMConfig.json") then
+				tableHelper.merge(testDMConfig, jsonInterface.load("custom/testDM/testDMConfig.json"))
+		end
+
+		if jsonInterface.load("custom/testDM/testDMMatchSettings.json") then
+				tableHelper.merge(testDMMatchSettings, jsonInterface.load("custom/testDM/testDMMatchSettings.json"))
+		end
+
+		tes3mp.SendMessage(pid, color.Silver .. "Loading testDMConfig and testDMMatchSettings from json.\n")
 
 end
 
@@ -1058,16 +1095,6 @@ testDM.PlayerItems = function(pid)
 						tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[Players[pid].data.customVariables.dm_class], true)
 				end
 		end
-
-		-- if testDMConfig.allowClasses == true then
-		-- 		if Players[pid].data.customVariables.dm_class == "" then
-		-- 				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts["startingclass"], true)
-		-- 		else
-		-- 				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[Players[pid].data.customVariables.dm_class], true)
-		-- 		end
-		-- else
-		-- 		tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerEquipmentGlobal["global class"], true)
-		-- end
 
 	elseif gameMode == "tdm" or gameMode == "ctf" then
 		testDM.TeamItems(pid)
@@ -1521,7 +1548,13 @@ customCommandHooks.registerCommand("grz", get_rot_z)
 customCommandHooks.registerCommand("addspawn", set_spawn_location)
 customCommandHooks.registerCommand("newmap", new_map)
 customCommandHooks.registerCommand("class", choose_class)
+customCommandHooks.registerCommand("setclass", class_override)
+customCommandHooks.registerCommand("tgc", toggle_global_class)
+customCommandHooks.registerCommand("loadsettings", load_settings)
 
+customCommandHooks.setRankRequirement("setclass", 2) -- sets the class of all players for a specific match or for the global class
+customCommandHooks.setRankRequirement("tgc", 2) -- toggles global class for all players on all matches
+customCommandHooks.setRankRequirement("loadsettings", 2) -- loads testDMConfig.json and testDMMatchSettings.json
 customCommandHooks.setRankRequirement("matchList", 2) -- prints matchlist to console for now
 customCommandHooks.setRankRequirement("newmap", 2) --creates new match data inside testDMMaps, testDMMatchSettings, and testDMConfig.matchList
 customCommandHooks.setRankRequirement("addspawn", 2) -- /addspawn team (1 or 2) -- used to create spawn locations for your newly created map
