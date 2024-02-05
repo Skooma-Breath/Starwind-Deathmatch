@@ -12,16 +12,7 @@ testDMConfig = {}
 testDMConfig.matchSelectionMethod = 1
 
 -- all the matches that can be played on the server
--- now saves and loads from json so matches can be created via commands in game
 testDMConfig.matchList = {"sandriver_2t_tdm", "sandriver_dm",}
-
-if jsonInterface.load("custom/testDM/testDMConfig_Matchlist.json") then
-    -- testDMConfig.matchList = jsonInterface.load("custom/testDM/testDMConfig_Matchlist.json")
-    tableHelper.merge(testDMConfig.matchList, jsonInterface.load("custom/testDM/testDMConfig_Matchlist.json"))
-end
-
-tes3mp.LogMessage(2, "++++ --Loading testDMConfig_Matchlist.json ... ++++")
-jsonInterface.save("custom/testDM/testDMConfig_Matchlist.json", testDMConfig.matchList)
 
 -- Number of kills required for either team to win
 testDMConfig.scoreLimit = 10
@@ -162,4 +153,13 @@ playerAcrobatics = 100,
 playerMarksman = 150
 
 }
+
+if jsonInterface.load("custom/testDM/testDMConfig.json") then
+    -- testDMConfig.matchList = jsonInterface.load("custom/testDM/testDMConfig_Matchlist.json")
+    tableHelper.merge(testDMConfig, jsonInterface.load("custom/testDM/testDMConfig.json"))
+end
+
+tes3mp.LogMessage(2, "++++ --Loading testDMConfig.json ... ++++")
+jsonInterface.save("custom/testDM/testDMConfig.json", testDMConfig)
+
 return testDMConfig
