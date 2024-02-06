@@ -1,7 +1,7 @@
 
 fork of https://github.com/testman42/tes3mp-deathmatch made to work with starwind
 
-just download the whole `scripts` folder and drop in into your `server` folder
+just download the project as a zip and drop the `scripts` folder into your `server` folder and overwrite ( will overwrite your config.lua and menu/help.lua )
 
 then open up `server/scripts/customscripts.lua` and add `require("custom/testDM/testDM")`
 
