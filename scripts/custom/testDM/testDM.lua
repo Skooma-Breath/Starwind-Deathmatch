@@ -169,6 +169,8 @@ testDM = {}
 -- TODO: find out if this is even legal
 -- If it's illegal, then hide from David
 config.customMenuIds.voteMenu = 9004
+-- no reason to run the startupscripts when running deathmatch scripts currently.....
+config.startupScriptsInstructions = color.Red .. "Warning: " .. color.White .. "Prepare to die.\n"
 
 time = require("time")
 --Ask David: Why do I need to write relative path here while other scripts are happy just with filename?
@@ -248,19 +250,19 @@ numberOfTeams = nil
 -- playerInventory = {{"ingred_bread_01_UNI3", 1, -1}, {"daedric dai-katana", 1, -1}}
 -- playerInventory =  {{"ingred_bread_01_UNI3", 1, -1}, {"SW_LightSpeasilv", 1, -1}, {"SW_GrenadeLaunchArkanian", 1, -1}, {"SW_GRFrag", 30, -1},}
 
--- Default stats for players
-playerLevel = 1
-playerAttributes = 100
-playerSkills = 100
-playerHealth = 10
-playerMagicka = 50
-playerFatigue = 300
+-- Default stats for players --was moved to testDMConfig.defaultSettings.globalStats
+-- playerLevel = 1
+-- playerAttributes = 100
+-- playerSkills = 100
+-- playerHealth = 10
+-- playerMagicka = 50
+-- playerFatigue = 300
 
 -- These override the above values for more control over the pace of the game
-playerLuck = 50
-playerSpeed = 100
-playerAcrobatics = 125 -- Ignored when playing the Dagoth-Ur map
-playerMarksman = 150
+-- playerLuck = 50
+-- playerSpeed = 100
+-- playerAcrobatics = 125 -- Ignored when playing the Dagoth-Ur map
+-- playerMarksman = 150
 
 -- TODO: implement sanity checking
 -- TODO: find an elegant way of checking all these values. A list + for loop looks the best option for now
@@ -389,6 +391,31 @@ testDM.MatchInit = function() -- Starts new match, resets matchId, controls map 
 
 	end
 
+-- set projectile speed for railgun/instagib type game modes
+tes3mp.LogMessage(2, "++++ currentMatch.projectileSpeed ++++" .. tostring(currentMatch.fProjectileMaxSpeed))
+	local recordStore = RecordStores["gamesetting"]
+	if currentMatch.projectileSpeed and testDMConfig.globalProjectileSpeed == false then
+
+			recordStore.data.permanentRecords["fProjectileMinSpeed"] = {
+				floatVar = currentMatch.projectileSpeed.min
+			}
+			recordStore.data.permanentRecords["fProjectileMaxSpeed"] = {
+				floatVar = currentMatch.projectileSpeed.max
+			}
+
+	else
+
+			recordStore.data.permanentRecords["fProjectileMinSpeed"] = {
+				floatVar = testDMConfig.projectileSpeed.min
+			}
+			recordStore.data.permanentRecords["fProjectileMaxSpeed"] = {
+				floatVar = testDMConfig.projectileSpeed.max
+			}
+
+	end
+
+	recordStore:Save()
+
 	--tes3mp.LogMessage(2, currentMatch.name)
 	tes3mp.LogMessage(2, "++++ local MatchInit: Starting a new " .. currentMatch.name .. " match with ID " .. matchId .. " ++++")
 
@@ -447,6 +474,7 @@ testDM.PlayerInit = function(pid)
 
 	Players[pid].data.customVariables.dm_class = ""
 	Players[pid].data.customVariables.changeClass = false
+	Players[pid].data.customVariables.dm_temp_classname = ""
 
 	if not testDMConfig.classGlobalOverride and not currentMatch.matchSpecificClass then
 			tes3mp.SendMessage(pid, color.Silver .. "Use " .. color.Lime .. "/class " .. color.Silver .. "to change your loadout.\n")
@@ -454,6 +482,8 @@ testDM.PlayerInit = function(pid)
 
 	testDM.PlayerItems(pid)
 	testDM.PlayerSpawner(pid)
+	--TODO put this in its own function for loading records
+	RecordStores["gamesetting"]:LoadRecords(pid, RecordStores["gamesetting"].data.permanentRecords, tableHelper.getArrayFromIndexes(RecordStores["gamesetting"].data.permanentRecords), true)
 end
 
 -- display the state of the game appropriately for each game mode
@@ -528,14 +558,14 @@ testDM.OnDeathTimeExpiration = function(pid)
 	end
 end
 
-testDM.OnPlayerCellChange = function(pid)
-
-	if Players[pid] ~= nil and Players[pid]:IsLoggedIn() then
-		testDM.CheckCell(pid)
-		Players[pid]:SaveStatsDynamic()
-		Players[pid]:Save()
-	end
-end
+-- testDM.OnPlayerCellChange = function(pid)
+--
+-- 	if Players[pid] ~= nil and Players[pid]:IsLoggedIn() then
+-- 		testDM.CheckCell(pid)
+-- 		Players[pid]:SaveStatsDynamic()
+-- 		Players[pid]:Save()
+-- 	end
+-- end
 
 testDM.OnPlayerEndCharGen = function(pid)
 
@@ -755,7 +785,7 @@ testDM.ProcessDeath = function(pid)
 
 
 				end
-
+				--TODO fix this so it happens when killed by npc or creature
 				-- leading space because this will be part of a constructed message
 				deathReason = " was killed by " .. playerNameColor .. playerKiller
 
@@ -798,11 +828,41 @@ end
 
 -- Called from local PlayerInit to reset characters for each new match
 testDM.ResetCharacter = function(pid)
+
 	-- Reset mwTDM info
 	Players[pid].data.mwTDM.kills = 0
 	Players[pid].data.mwTDM.deaths = 0
 	Players[pid].data.mwTDM.spree = 0
 	Players[pid].data.mwTDM.spawnSeconds = spawnTime
+
+	local playerLevel = testDMConfig.defaultSettings.globalStats.playerLevel
+	local playerAttributes = testDMConfig.defaultSettings.globalStats.playerAttributes
+	local playerSkills = testDMConfig.defaultSettings.globalStats.playerSkills
+	local playerHealth = testDMConfig.defaultSettings.globalStats.playerHealth
+	local playerMagicka = testDMConfig.defaultSettings.globalStats.playerMagicka
+	local playerFatigue = testDMConfig.defaultSettings.globalStats.playerFatigue
+	local playerLuck = testDMConfig.defaultSettings.globalStats.playerLuck
+	local playerSpeed = testDMConfig.defaultSettings.globalStats.playerSpeed
+	local playerAcrobatics = testDMConfig.defaultSettings.globalStats.playerAcrobatics
+	local playerMarksman = testDMConfig.defaultSettings.globalStats.playerMarksman
+
+--use matchSpecificStats if they exist and global override is false
+	if testDMConfig.statsGlobalOverride == false and currentMatch.matchSpecificStats then
+
+			playerLevel = currentMatch.matchSpecificStats.playerLevel
+		  playerAttributes = currentMatch.matchSpecificStats.playerAttributes
+		  playerSkills = currentMatch.matchSpecificStats.playerSkills
+		  playerHealth = currentMatch.matchSpecificStats.playerHealth
+		  playerMagicka = currentMatch.matchSpecificStats.playerMagicka
+		  playerFatigue = currentMatch.matchSpecificStats.playerFatigue
+		  playerLuck = currentMatch.matchSpecificStats.playerLuck
+		  playerSpeed = currentMatch.matchSpecificStats.playerSpeed
+		  playerAcrobatics = currentMatch.matchSpecificStats.playerAcrobatics
+		  playerMarksman = currentMatch.matchSpecificStats.playerMarksman
+
+	end
+
+	--TODO use OnPlayerSkill validator and return eventStatus(false, false)....
 
 	-- Reset player level
 	Players[pid].data.stats.level = playerLevel
@@ -842,6 +902,18 @@ testDM.ResetCharacter = function(pid)
 	Players[pid].data.stats.magickaCurrent = playerMagicka
 	Players[pid].data.stats.fatigueBase = playerFatigue
 	Players[pid].data.stats.fatigueCurrent = playerFatigue
+
+	--TODO set players race according to currentMatch.matchSpecificRaces
+	-- tes3mp.SetRace(self.pid, self.data.character.race)
+	-- tes3mp.SetHead(self.pid, self.data.character.head)
+	-- tes3mp.SetHair(self.pid, self.data.character.hair)
+	-- tes3mp.SetIsMale(self.pid, self.data.character.gender)
+	-- if self.data.character.modelOverride ~= nil then
+	-- 		tes3mp.SetModel(self.pid, self.data.character.modelOverride)
+	-- end
+	-- tes3mp.SetBirthsign(self.pid, self.data.character.birthsign)
+	--
+	-- tes3mp.SendBaseInfo(self.pid)
 
 	-- Reload player with reset information
 	Players[pid]:Save()
@@ -982,10 +1054,91 @@ end
 local function toggle_global_class(pid, cmd)
 
 		testDMConfig.classGlobalOverride = not testDMConfig.classGlobalOverride
-		if testdmconfig.classGlobalOverride then
+		if testDMConfig.classGlobalOverride then
 				tes3mp.SendMessage(pid, color.Silver ..  "global class was enabled\n")
 		else
-				tes3mp.SendMessage(pid, color.Silver ..  "global class was diabled\n")
+				tes3mp.SendMessage(pid, color.Silver ..  "global class was disabled\n")
+		end
+
+end
+
+local function toggle_global_stats(pid, cmd)
+
+		testDMConfig.statsGlobalOverride = not testDMConfig.statsGlobalOverride
+		if testDMConfig.statsGlobalOverride then
+				tes3mp.SendMessage(pid, color.Silver ..  "global stats wwere enabled\n")
+		else
+				tes3mp.SendMessage(pid, color.Silver ..  "global stats were disabled\n")
+		end
+
+end
+
+local function set_stats(pid, cmd)
+
+		if not cmd[2] then
+				tes3mp.SendMessage(pid, color.Warning .. "possible commands: \n")
+				tes3mp.SendMessage(pid, color.Lime .. "/setstats matchName\n")
+				tes3mp.SendMessage(pid, color.Lime .. "/setstats global\n")
+		end
+
+		if testDMMatchSettings[cmd[2]] then
+
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerLevel = Players[pid].data.stats.level
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerAttributes = Players[pid].data.attributes.Strength.base
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerSkills = Players[pid].data.skills.Unarmored.base
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerHealth = Players[pid].data.stats.healthBase
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerMagicka = Players[pid].data.stats.magickaBase
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerFatigue = Players[pid].data.stats.fatigueBase
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerLuck = Players[pid].data.attributes.Luck.base
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerSpeed = Players[pid].data.attributes.Speed.base
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerAcrobatics = Players[pid].data.skills.Acrobatics.base
+				testDMMatchSettings[cmd[2]].matchSpecificStats.playerMarksman = Players[pid].data.skills.Marksman.base
+
+				tes3mp.SendMessage(pid, color.Silver ..  "stats for " .. color.Lime .. cmd[2] .. color.Silver ..  " have been set to your current stats.\n")
+				jsonInterface.save("custom/testDM/testDMMatchSettings.json", testDMMatchSettings)
+
+		elseif cmd[2] == "global" then
+
+				testDMConfig.defaultSettings.globalStats.playerLevel = Players[pid].data.stats.level
+				testDMConfig.defaultSettings.globalStats.playerAttributes = Players[pid].data.attributes.Strength.base
+				testDMConfig.defaultSettings.globalStats.playerSkills = Players[pid].data.skills.Unarmored.base
+				testDMConfig.defaultSettings.globalStats.playerHealth = Players[pid].data.stats.healthBase
+				testDMConfig.defaultSettings.globalStats.playerMagicka = Players[pid].data.stats.magickaBase
+				testDMConfig.defaultSettings.globalStats.playerFatigue = Players[pid].data.stats.fatigueBase
+				testDMConfig.defaultSettings.globalStats.playerLuck = Players[pid].data.attributes.Luck.base
+				testDMConfig.defaultSettings.globalStats.playerSpeed = Players[pid].data.attributes.Speed.base
+				testDMConfig.defaultSettings.globalStats.playerAcrobatics = Players[pid].data.skills.Acrobatics.base
+				testDMConfig.defaultSettings.globalStats.playerMarksman = Players[pid].data.skills.Marksman.base
+
+				tes3mp.SendMessage(pid, color.Lime .. "Global " .. color.Silver .. "stats have been set to your current stats.\n")
+				jsonInterface.save("custom/testDM/testDMConfig.json", testDMConfig)
+
+		end
+
+end
+
+local function set_projectile_speed(pid, cmd)
+
+		if not cmd[2] or cmd[5] then
+				tes3mp.SendMessage(pid, color.Warning .. "example series of commands: \n")
+				tes3mp.SendMessage(pid, color.Lime .. "/sps matchName max 5000 class\n")
+				tes3mp.SendMessage(pid, color.Lime .. "/sps matchName min 5000 class\n")
+				tes3mp.SendMessage(pid, color.Lime .. "/sps global min 400 class\n")
+				tes3mp.SendMessage(pid, color.Lime .. "/sps global max 3000 class\n")
+		end
+
+		if testDMMatchSettings[cmd[2]] then
+				if cmd[3] == "max" then
+						testDMMatchSettings[cmd[2]].projectileSpeed.max = tonumber(cmd[4])
+				elseif cmd[3] == "min" then
+						testDMMatchSettings[cmd[2]].projectileSpeed.min = tonumber(cmd[4])
+				end
+		elseif cmd[2] == "global" then
+				if cmd[3] == "max" then
+						testDMConfig.projectileSpeed.max = tonumber(cmd[4])
+				elseif cmd[3] == "min" then
+						testDMConfig.projectileSpeed.min = tonumber(cmd[4])
+				end
 		end
 
 end
@@ -993,19 +1146,23 @@ end
 local function class_override(pid, cmd)
 
 		local type = cmd[2]
-
-		if type  == "match" then
-				local match = cmd[3]
-				local class = cmd[4]
-				if cmd[5] then 	class = class .. " " .. cmd[5] end
-				testDMMatchSettings[cmd[3]].matchSpecificClass = class
-				tes3mp.SendMessage(pid, color.Silver .. "Class will be set to " .. color.Warning .. class .. color.Silver .. " for everyone on " .. cmd[3] .. ".\n")
+		--TODO fix so you can remove match specific class
+		if testDMMatchSettings[cmd[2]] then
+				-- local match = cmd[3]
+				local class = tableHelper.concatenateFromIndex(cmd, 3)
+				if class == "nil" then
+						testDMMatchSettings[cmd[2]].matchSpecificClass = nil
+						tes3mp.SendMessage(pid, color.Silver .. "match specific class removed from " .. match .. " \n")
+						jsonInterface.save("custom/testDM/testDMMatchSettings.json", testDMMatchSettings)
+						return
+				end
+				testDMMatchSettings[cmd[2]].matchSpecificClass = class
+				tes3mp.SendMessage(pid, color.Silver .. "Class will be set to " .. color.Warning .. class .. color.Silver .. " for everyone on " .. cmd[2] .. ".\n")
 				jsonInterface.save("custom/testDM/testDMMatchSettings.json", testDMMatchSettings)
 		end
 
 		if type == "global" then
-				local class = cmd[3]
-				if cmd[4] then 	class = class .. " " .. cmd[4] end
+				local class = tableHelper.concatenateFromIndex(cmd, 3)
 				testDMConfig.playerEquipmentGlobal["global class"] = testDMConfig.playerLoadouts[class]
 				tes3mp.SendMessage(pid, color.Silver .. "Class will be set to " .. color.Warning .. class .. color.Silver ..
 				" for everyone on all matches if global class is enforced " .. color.Warning .. "(/tgc)" .. color.Silver .. ".\n")
@@ -1018,11 +1175,14 @@ end
 local function load_settings(pid, cmd)
 
 		if jsonInterface.load("custom/testDM/testDMConfig.json") then
-				tableHelper.merge(testDMConfig, jsonInterface.load("custom/testDM/testDMConfig.json"))
+				-- tableHelper.merge(testDMConfig, jsonInterface.load("custom/testDM/testDMConfig.json"), true)
+				testDMConfig = jsonInterface.load("custom/testDM/testDMConfig.json")
+				tableHelper.print(testDMConfig.playerLoadouts)
 		end
 
 		if jsonInterface.load("custom/testDM/testDMMatchSettings.json") then
-				tableHelper.merge(testDMMatchSettings, jsonInterface.load("custom/testDM/testDMMatchSettings.json"))
+				-- tableHelper.merge(testDMMatchSettings, jsonInterface.load("custom/testDM/testDMMatchSettings.json"), true)
+				testDMMatchSettings = jsonInterface.load("custom/testDM/testDMMatchSettings.json")
 		end
 
 		tes3mp.SendMessage(pid, color.Silver .. "Loading testDMConfig and testDMMatchSettings from json.\n")
@@ -1031,9 +1191,83 @@ end
 
 local function create_class(pid, cmd)
 
-		--TODO /newclass classname (makes empty table)
-		--TODO /addtoclass equipmentSlot refId
-		--TODO /createclass (saves to json)
+		local pname = tes3mp.GetName(pid)
+		local slot
+		local merge = false
+		local type = cmd[2]
+
+		if type == "name" then
+				Players[pid].data.customVariables.dm_temp_classname = tableHelper.concatenateFromIndex(cmd, 3)
+				testDMConfig.class_builder[pname] = {
+					[Players[pid].data.customVariables.dm_temp_classname] = {}
+				}
+				tes3mp.SendMessage(pid, color.Lime .. Players[pid].data.customVariables.dm_temp_classname .. color.Silver .. " was created.\n")
+		end
+
+		if type == "weapon" and tempClassName ~= "" then
+				testDMConfig.class_builder[pname][Players[pid].data.customVariables.dm_temp_classname] = {
+					[16] = {
+						refId = tableHelper.concatenateFromIndex(cmd, 3),
+						count = 1,
+						charge = -1,
+						enchantmentCharge = -1
+					}
+				}
+				merge = true
+				tableHelper.print(testDMConfig.class_builder[pname])
+		end
+
+		if type == "ammo" and Players[pid].data.customVariables.dm_temp_classname ~= "" then
+				testDMConfig.class_builder[pname][Players[pid].data.customVariables.dm_temp_classname] = {
+					[18] = {
+						refId = tableHelper.concatenateFromIndex(cmd, 3),
+						count = 1,
+						charge = -1,
+						enchantmentCharge = -1
+					}
+				}
+				merge = true
+				tableHelper.print(testDMConfig.class_builder[pname])
+		end
+
+		if type == "slot" and Players[pid].data.customVariables.dm_temp_classname ~= "" then
+				slot = tonumber(cmd[3])
+				testDMConfig.class_builder[pname][Players[pid].data.customVariables.dm_temp_classname] = {
+					[slot] = {
+						refId = tableHelper.concatenateFromIndex(cmd, 4),
+						count = 1,
+						charge = -1,
+						enchantmentCharge = -1
+					}
+				}
+				merge = true
+				tableHelper.print(testDMConfig.class_builder[pname])
+		end
+
+		if merge then
+				tableHelper.merge(testDMConfig.playerLoadouts, testDMConfig.class_builder[pname], true) --TODO tableHelper.fixNumericalKeys(testDMConfig.playerLoadouts)
+				tes3mp.SendMessage(pid, color.Lime .. cmd[2] .. color.Silver .. " was added.\n")
+				tableHelper.print(testDMConfig.playerLoadouts)
+				testDMConfig.class_builder[pname] = nil
+				jsonInterface.save("custom/testDM/testDMConfig.json", testDMConfig)
+		end
+
+		if not cmd[2] or not cmd[3] then
+				tes3mp.SendMessage(pid, color.Warning .. "example series of commands: \n")
+				tes3mp.SendMessage(pid, color.Lime .. "/newclass name random class\n")
+				tes3mp.SendMessage(pid, color.Warning .. "To add a weapon: \n")
+				tes3mp.SendMessage(pid, color.Lime .. "/newclass weapon weapon_refid\n")
+				tes3mp.SendMessage(pid, color.Warning .. "To add ammo: \n")
+				tes3mp.SendMessage(pid, color.Lime .. "/newclass ammo ammo_refid\n")
+				tes3mp.SendMessage(pid, color.Warning .. "To add any equipment slot: \n")
+				tes3mp.SendMessage(pid, color.Lime .. "/newclass slot number random_refid\n")
+				tes3mp.SendMessage(pid, color.Warning .. "/help for more info.\n")
+		end
+end
+
+local function set_race(pid, cmd)
+
+		--TODO make commands for enforcing race in the same way as classes
 
 end
 
@@ -1042,8 +1276,7 @@ local function choose_class(pid, cmd)
 				tes3mp.SendMessage(pid, color.Silver .. "Global class is being enforced.\n")
 				return
 		end
-		local class = cmd[2]
-		if cmd[3] then 	class = class .. " " .. cmd[3] end
+		local class = tableHelper.concatenateFromIndex(cmd, 2)
 		--TODO let players choose the class they wish to use after their next death... classes are setup in testDMConfig
 		if testDMConfig.playerLoadouts[class] then
 				-- tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[class], true)
@@ -1083,17 +1316,22 @@ testDM.PlayerItems = function(pid)
 		if testDMConfig.classGlobalOverride then
 
 				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerEquipmentGlobal["global class"], true)
+				tableHelper.print(Players[pid].data.equipment)
 
 		elseif currentMatch.matchSpecificClass then
 
 				tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[currentMatch.matchSpecificClass], true)
+				tableHelper.print(Players[pid].data.equipment)
 
 		else
+
 				if Players[pid].data.customVariables.dm_class == "" then
 						tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts["startingclass"], true)
+						tableHelper.print(Players[pid].data.equipment)
 				else
 						tableHelper.merge(Players[pid].data.equipment, testDMConfig.playerLoadouts[Players[pid].data.customVariables.dm_class], true)
 				end
+
 		end
 
 	elseif gameMode == "tdm" or gameMode == "ctf" then
@@ -1137,6 +1375,7 @@ testDM.PlayerAssignRandomOutfit = function(pid)
 	-- and since "break" stops the whole loop, we want to do it after shirt and pants were already added
 	local equipmentIndexList = {8, 9, 7}
 	for i=1,3 do
+		--TODO try changing this to and tes3mp.GetModel(pid) == base_animkna.nif then
 		if (i == 3 and race == "argonian") or (i == 3 and race == "khajiit") then
 			break
 		end
@@ -1161,6 +1400,7 @@ testDM.TeamItems = function(pid)
 		if Players[pid].data.mwTDM.team == teamIndex then
 
 			-- give non-beast races shoes / boots
+			--TODO try changing this to if tes3mp.GetModel(pid) == base_animkna.nif then
 			if race ~= "argonian" and race ~= "khajiit" then
 				Players[pid].data.equipment[7] = { refId = testDMConfig.teamUniforms[teamIndex][3], count = 1, charge = -1 }
 			end
@@ -1231,7 +1471,6 @@ local function set_spawn_location(pid, cmd)
 			tes3mp.GetRotZ(pid)
 		}
 
-		--TODO make this save in testDMMatchSettings instead... it doesn't seem to be used in testDMMaps at all anywhere
 		table.insert(testDMMaps[tes3mp.GetCell(pid)].teamSpawnLocations[team], spawn_location)
 
 		--TODO I don't think there is a reason to have the spawnlocation data in testDMMaps.json since it needs to be in testDMMatchSettings to actually choose the spawn...
@@ -1241,7 +1480,7 @@ local function set_spawn_location(pid, cmd)
 
 end
 
-local matchName
+local matchName --TODO make these player variables
 local scoreToWin
 local function add_map(pid)
 
@@ -1478,6 +1717,33 @@ testDM.clear_crime = function(pid, targetPlayers)
   end
 end
 
+testDM.createCustomRecords = function()
+
+		local recordStore = RecordStores["gamesetting"]
+
+		recordStore.data.permanentRecords["fMiscSkillBonus"] = {
+			floatVar = 1000.0
+		}
+		recordStore.data.permanentRecords["fMinorSkillBonus"] = {
+			floatVar = 1000.0
+		}
+		recordStore.data.permanentRecords["fMajorSkillBonus"] = {
+			floatVar = 1000.0
+		}
+		recordStore.data.permanentRecords["fSpecialSkillBonus"] = {
+			floatVar = 1000.0
+		}
+		-- recordStore.data.permanentRecords["fProjectileMinSpeed"] = {
+		-- 	floatVar = 1000.0
+		-- }
+		-- recordStore.data.permanentRecords["fProjectileMaxSpeed"] = {
+		-- 	floatVar = 1000.0
+		-- }
+
+		recordStore:Save()
+
+end
+
 
 -- custom validators
 
@@ -1498,11 +1764,21 @@ customEventHooks.registerValidator("OnDeathTimeExpiration", function(eventStatus
 end)
 
 
+customEventHooks.registerValidator("OnPlayerSkill", function(eventStatus, pid)
+		return customEventHooks.makeEventStatus(false,false)
+end)
+
+customEventHooks.registerValidator("OnPlayerAttribute", function(eventStatus, pid)
+		return customEventHooks.makeEventStatus(false,false)
+end)
+
+
 -- custom handlers
 
 customEventHooks.registerHandler("OnServerPostInit", function()
 	testDM.SanityCheck()
 	testDM.MatchInit()
+	testDM.createCustomRecords()
 end)
 
 
@@ -1551,6 +1827,10 @@ customCommandHooks.registerCommand("class", choose_class)
 customCommandHooks.registerCommand("setclass", class_override)
 customCommandHooks.registerCommand("tgc", toggle_global_class)
 customCommandHooks.registerCommand("loadsettings", load_settings)
+customCommandHooks.registerCommand("newclass", create_class)
+customCommandHooks.registerCommand("tgs", toggle_global_stats)
+customCommandHooks.registerCommand("sps", set_projectile_speed)
+customCommandHooks.registerCommand("setstats", set_stats)
 
 customCommandHooks.setRankRequirement("setclass", 2) -- sets the class of all players for a specific match or for the global class
 customCommandHooks.setRankRequirement("tgc", 2) -- toggles global class for all players on all matches
@@ -1560,7 +1840,10 @@ customCommandHooks.setRankRequirement("newmap", 2) --creates new match data insi
 customCommandHooks.setRankRequirement("addspawn", 2) -- /addspawn team (1 or 2) -- used to create spawn locations for your newly created map
 customCommandHooks.setRankRequirement("forceend", 2) -- ends the current match and starts a random new one
 customCommandHooks.setRankRequirement("newmatch", 2) -- /newmatch matchname -- used to start a new match of your choice
-
+customCommandHooks.setRankRequirement("newclass", 2) -- /newclass -- used to build new classes
+customCommandHooks.setRankRequirement("tgs", 2) -- /tgs -- toggle enforcement of global stats
+customCommandHooks.setRankRequirement("sps", 2) -- /sps -- set projectile speed for match or global
+customCommandHooks.setRankRequirement("setstats", 2) -- /setstats -- set stats for match or global to your current stats
 --customCommandHooks.registerCommand("help", testDM.ShowHelpDialog)
 
 return testDM
