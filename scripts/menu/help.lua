@@ -48,11 +48,25 @@ Menus["help player"] = {
 
 Menus["dm admin commands"] = {
     text =
+        color.Lime .. "/tgs\n" ..
+            color.Silver .. "toggles the enforcing of global stats on all players in all matches\n" ..
         color.Lime .. "/tgc\n" ..
             color.Silver .. "toggles the enforcing of a global class on all players in all matches\n" ..
+        color.Lime .. "/sps\n" ..
+            color.Silver .. "set projectile speed for a specific match or all matches\n" ..
+        color.Lime .. "/setstats\n" ..
+            color.Silver .. "set stats to your current stats for a specific match or global\n" ..
+            color.Silver .. "/setclass <matchName>\n" ..
+            color.Silver .. "/setclass <global>\n" ..
+        color.Lime .. "/newclass\n" ..
+            color.Silver .. "create a new class\n" ..
+            color.Silver .. "/newclass <name> <classname>\n" ..
+            color.Silver .. "/newclass <weapon> <refId>\n" ..
+            color.Silver .. "/newclass <ammo> <refId>\n" ..
+            color.Silver .. "/newclass <slot> <equipment slot> <refId>\n" ..
         color.Lime .. "/setclass\n" ..
             color.Silver .. "sets the class of all players for a specific match or for the global class\n" ..
-            color.Silver .. "/setclass <match> <matchname> <class>\n" ..
+            color.Silver .. "/setclass <matchname> <class>\n" ..
             color.Silver .. "/setclass <global> <class>\n" ..
         color.Lime .. "/loadsettings\n" ..
             color.Silver .. "loads testDMConfig.json and testDMMatchSettings.json\n" ..
