@@ -25,7 +25,20 @@ testDMMatchSettings.sandriver_dm.map = testDMMaps["tatooine, sandriver"]
 testDMMatchSettings.sandriver_dm.scoreLimit = 10
 testDMMatchSettings.sandriver_dm.additionalEquipment = {}
 testDMMatchSettings.sandriver_dm.itemsOnMap = {}
-testDMMatchSettings.sandriver_dm.matchSpecificClass = "sith"
+testDMMatchSettings.sandriver_dm.matchSpecificClass = "startingclass"
+testDMMatchSettings.sandriver_dm.projectileSpeed = {min = 10000.0, max = 10000.0}
+testDMMatchSettings.sandriver_dm.matchSpecificStats = {
+    playerLevel = 1,
+    playerAttributes = 100,
+    playerSkills = 100,
+    playerHealth = 100,
+    playerMagicka = 100,
+    playerFatigue = 300,
+    playerLuck = 100,
+    playerSpeed = 100,
+    playerAcrobatics = 125,
+    playerMarksman = 150
+}
 
 -- teamdeathmatch in sandriver
 testDMMatchSettings.sandriver_2t_tdm = {}
@@ -36,15 +49,16 @@ testDMMatchSettings.sandriver_2t_tdm.map = testDMMaps["tatooine, sandriver"]
 testDMMatchSettings.sandriver_2t_tdm.scoreLimit = 10
 testDMMatchSettings.sandriver_2t_tdm.additionalEquipment = {}
 testDMMatchSettings.sandriver_2t_tdm.itemsOnMap = {}
--- testDMMatchSettings.sandriver_dm.matchSpecificClass = "jedi"
+-- testDMMatchSettings.sandriver_2t_tdm.matchSpecificRaces = {"argonian", "khajiit"}
 
-if jsonInterface.load("custom/testDM/testDMMatchSettings.json") then
+if not jsonInterface.load("custom/testDM/testDMMatchSettings.json") then
     -- testDMMatchSettings = jsonInterface.load("custom/testDM/testDMMatchSettings.json")
-    tableHelper.merge(testDMMatchSettings, jsonInterface.load("custom/testDM/testDMMatchSettings.json"))
+    -- tableHelper.merge(testDMMatchSettings, jsonInterface.load("custom/testDM/testDMMatchSettings.json"), true)
+    tes3mp.LogMessage(2, "++++ --Saving testDMMatchSettings.lua to json ... ++++")
+
+    jsonInterface.save("custom/testDM/testDMMatchSettings.json", testDMMatchSettings)
+else
+    testDMMatchSettings = jsonInterface.load("custom/testDM/testDMMatchSettings.json")
 end
-
-tes3mp.LogMessage(2, "++++ --Loading testDMMatchSettings.json ... ++++")
-
-jsonInterface.save("custom/testDM/testDMMatchSettings.json", testDMMatchSettings)
 
 return testDMMatchSettings
