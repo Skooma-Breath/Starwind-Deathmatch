@@ -34,15 +34,18 @@ testDMMaps["tatooine, sandriver"].teamSpawnLocations[2] = {
     {"Tatooine, Sandriver", 2795.4016113281, 59.234127044678, 12264.759765625, 0.16481018066406}
 }
 
-if jsonInterface.load("custom/testDM/testDMMaps.json") then
+if not jsonInterface.load("custom/testDM/testDMMaps.json") then
     -- testDMMaps = jsonInterface.load("custom/testDM/testDMMaps.json")
-    tableHelper.merge(testDMMaps, jsonInterface.load("custom/testDM/testDMMaps.json"))
+    -- tableHelper.merge(testDMMaps, jsonInterface.load("custom/testDM/testDMMaps.json"))
+    tes3mp.LogMessage(
+        2,
+        "++++ --Saving testDMMaps.lua to json ... ++++"
+    )
+    jsonInterface.save("custom/testDM/testDMMaps.json", testDMMaps)
+else
+    testDMMaps = jsonInterface.load("custom/testDM/testDMMaps.json")
 end
 
-tes3mp.LogMessage(
-    2,
-    "++++ --Loading maps from server/data/custom/testDMMaps.json and adding any that exist from server/scripts/custom/testDMMaps.lua ... ++++"
-)
-jsonInterface.save("custom/testDM/testDMMaps.json", testDMMaps)
+
 
 return testDMMaps
