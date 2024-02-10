@@ -84,6 +84,10 @@ testDMConfig.allowSignPowers = false
 --TODO don't really need this one now...
 -- testDMConfig.allowClasses = true
 
+--used to store temporary data when building classes
+testDMConfig.tempClassName = nil
+testDMConfig.class_builder = {}
+
 -- simple placeholder classes...
 testDMConfig.playerLoadouts = {
   ["startingclass"] = {
@@ -105,6 +109,7 @@ testDMConfig.playerLoadouts = {
 -- testDMConfig.playerEquipInstagib = {{"daedric long bow", 1, -1}, {"daedric arrow", 75, -1}}
 --TODO make command to set this in game
 testDMConfig.classGlobalOverride = false
+testDMConfig.statsGlobalOverride = false
 
 --TODO make a command to set any class to the global class
 testDMConfig.playerEquipmentGlobal = {
@@ -114,52 +119,59 @@ testDMConfig.playerEquipmentGlobal = {
   },
 }
 
+testDMConfig.globalProjectileSpeed = false
+testDMConfig.projectileSpeed = {min = 400.0, max = 3000.0}
+
 -- list of default values
 -- these are used when match does not specify it's own value
 testDMConfig.defaultSettings = {
 
--- Number of kills required for either team to win
-scoreToWin = 6,
+  -- Number of kills required for either team to win
+  scoreToWin = 6,
 
--- Determines whether players are allowed to manually switch teams
-canSwitchTeams = true,
+  -- Determines whether players are allowed to manually switch teams
+  canSwitchTeams = true,
 
--- Default spawn time in seconds
-spawnTime = 5,
+  -- Default spawn time in seconds
+  spawnTime = 5,
 
--- Determines whether suicide & team-killing add spawn delay and its duration
-addSpawnDelay = true,
-spawnDelay = 3,
+  -- Determines whether suicide & team-killing add spawn delay and its duration
+  addSpawnDelay = true,
+  spawnDelay = 3,
 
--- Names of the two teams
--- (Change "color.Blue" and "...Brown" in --ProcessDeath)
-numberOfTeams = nil,
+  -- Names of the two teams
+  -- (Change "color.Blue" and "...Brown" in --ProcessDeath)
+  numberOfTeams = nil,
 
--- Starting inventory items for both teams
--- (You can add as many items as you want; simply follow the format {"reference ID", count, charge})
-playerInventory =  {{"ingred_bread_01_UNI3", 1, -1},} ,
+  -- Starting inventory items for both teams
+  -- (You can add as many items as you want; simply follow the format {"reference ID", count, charge})
+  playerInventory =  {{"ingred_bread_01_UNI3", 1, -1},} ,
 
---TODO Make this more configurable (diff stats for diff match types etc...)
--- stats for players
-playerLevel = 1,
-playerAttributes = 100,
-playerSkills = 75,
-playerHealth = 15,
-playerMagicka = 50,
-playerFatigue = 300,
-playerLuck = 50,
-playerSpeed = 200,
-playerAcrobatics = 100,
-playerMarksman = 150
+  --TODO Make this more configurable (diff stats for diff match types etc...)
+  -- stats for players
+  globalStats = {
+    playerLevel = 1,
+    playerAttributes = 100,
+    playerSkills = 100,
+    playerHealth = 100,
+    playerMagicka = 100,
+    playerFatigue = 300,
+    playerLuck = 100,
+    playerSpeed = 100,
+    playerAcrobatics = 125,
+    playerMarksman = 150
+  }
 
 }
 
-if jsonInterface.load("custom/testDM/testDMConfig.json") then
-    -- testDMConfig.matchList = jsonInterface.load("custom/testDM/testDMConfig_Matchlist.json")
-    tableHelper.merge(testDMConfig, jsonInterface.load("custom/testDM/testDMConfig.json"))
+--saves this file to json only when it doesn't exist in custom/testDM/testDMConfig.json otherwise load it
+if not jsonInterface.load("custom/testDM/testDMConfig.json") then
+    tes3mp.LogMessage(2, "++++ --Saving testDMConfig..lua to json ... ++++")
+    jsonInterface.save("custom/testDM/testDMConfig.json", testDMConfig)
+else
+    testDMConfig = jsonInterface.load("custom/testDM/testDMConfig.json")
+    tableHelper.fixNumericalKeys(testDMConfig.playerLoadouts)
+    tableHelper.fixNumericalKeys(testDMConfig.playerEquipmentGlobal)
 end
-
-tes3mp.LogMessage(2, "++++ --Loading testDMConfig.json ... ++++")
-jsonInterface.save("custom/testDM/testDMConfig.json", testDMConfig)
 
 return testDMConfig
